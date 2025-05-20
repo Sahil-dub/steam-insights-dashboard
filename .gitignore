@@ -1,0 +1,14 @@
+# Ignore dataset
+data/steam_games.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info
+.venv/
+venv/
+
+# VS Code and Jupyter
+.vscode/
+**/.ipynb_checkpoints
