@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 st.title("📊 EDA Overview")
@@ -18,7 +20,8 @@ df['release_date'] = pd.to_datetime(df['release_date'], errors='coerce')
 df['release_year'] = df['release_date'].dt.year
 years = sorted(df['release_year'].dropna().unique().astype(int))
 genres = sorted(set([genre.strip() for sublist in df['genres'].dropna().astype(str).str.split(',') for genre in sublist]))
-selected_years = st.sidebar.multiselect("Select Release Years:", years, default=years)
+default_years = years[-1:] if len(years) >= 5 else years
+selected_years = st.sidebar.multiselect("Select Release Years:", years, default=default_years)
 selected_genres = st.sidebar.multiselect("Select Genres:", genres)
 
 # Filter dataset
@@ -53,3 +56,12 @@ fig2 = px.bar(x=genre_counts.values, y=genre_counts.index, orientation='h',
 st.plotly_chart(fig2, use_container_width=True)
 st.markdown("---")
 st.markdown("✅ This page summarizes the cleaned dataset and provides insights on game releases and genre popularity.")
+
+st.write("Total games:", len(df))
+st.subheader("Games Released by Year")
+games_per_year = df['release_year'].value_counts().sort_index()
+st.bar_chart(games_per_year)
+st.subheader("Top 10 Game Genres")
+top_genres = df['genres'].str.split(';').explode().value_counts().head(10)
+st.bar_chart(top_genres)
+
