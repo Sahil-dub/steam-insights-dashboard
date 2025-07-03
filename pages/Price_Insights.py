@@ -4,6 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.express as px
 
+
 st.set_page_config(page_title="💰 Price Insights", layout="wide")
 st.title("💰 Game Price Insights")
 

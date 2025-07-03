@@ -11,6 +11,59 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --- Custom Styling ---
+st.markdown(
+    """
+    <style>
+        /* Background */
+        .main {
+            background-color: #f8f9fa;
+        }
+
+        /* Header Title */
+        h1 {
+            color: #4CAF50;
+            font-weight: 700;
+        }
+
+        /* Sidebar */
+        .css-1d391kg {
+            background-color: #f1f3f6 !important;
+        }
+
+        /* Charts and Containers */
+        .element-container {
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            padding: 10px;
+            margin-bottom: 25px;
+        }
+
+        /* Metric styling */
+        div[data-testid="metric-container"] {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            box-shadow: 1px 1px 5px rgba(0,0,0,0.05);
+            margin: 5px;
+        }
+
+        /* Input fields */
+        input {
+            border-radius: 8px !important;
+        }
+
+        /* Sidebar title */
+        section[data-testid="stSidebar"] h1 {
+            color: #2C3E50;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
 # --- Header ---
 st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🎮 Steam Insights Dashboard</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Explore trends in game releases, genres, and user preferences on Steam.</p>", unsafe_allow_html=True)
@@ -28,8 +81,22 @@ df = load_data()
 
 # --- Sidebar Filters ---
 with st.sidebar:
-    st.markdown("## 🔎 Filters")
-    
+    st.markdown("## 🔍 Search & Filters")
+
+    # Base search query
+    base_query = st.text_input("Type to Search Game Title:", placeholder="e.g. Portal")
+
+    # Match game titles as user types
+    matched_titles = df[df['name'].str.contains(base_query, case=False, na=False)]['name'].unique()
+
+    # Simulate autocomplete by showing matching names in a selectbox
+    if base_query:
+        selected_game = st.selectbox("Select a Matching Title:", options=matched_titles, key="title_select")
+    else:
+        selected_game = None
+
+
+
     years = sorted(df['release_year'].dropna().unique().astype(int))
     genres = sorted(set(
         genre.strip()
@@ -38,16 +105,25 @@ with st.sidebar:
     ))
 
     default_years = years[-5:] if len(years) >= 5 else years
-    selected_years = st.multiselect("Release Years:", years, default=default_years)
-    selected_genres = st.multiselect("Genres:", genres)
+    selected_years = st.multiselect("Release Years:", years, default=default_years, key="year_filter")
+    selected_genres = st.multiselect("Genres:", genres, key="genre_filter")
+
 
 # --- Filter Data ---
 if selected_years:
     filtered_df = df[df['release_year'].isin(selected_years)]
+
     if selected_genres:
         filtered_df = filtered_df[filtered_df['genres'].str.contains('|'.join(selected_genres), case=False, na=False)]
+
+    if selected_game:
+        filtered_df = filtered_df[filtered_df['name'] == selected_game]
+    elif base_query:
+        filtered_df = filtered_df[filtered_df['name'].str.contains(base_query, case=False, na=False)]    
+
 else:
     filtered_df = pd.DataFrame()
+
 
 # --- KPI Section ---
 st.markdown("### 📊 Key Performance Indicators")
@@ -118,9 +194,10 @@ with st.expander("📊 Additional Dataset Overview"):
     st.markdown("#### 🔢 Total Games in Dataset")
     st.write(len(df))
 
-    st.markdown("#### 📅 Game Releases by Year")
-    games_per_year = df['release_year'].value_counts().sort_index()
-    st.bar_chart(games_per_year)
+    st.markdown("#### 📅 All Game Releases by Year (Full Dataset)")
+    all_releases = df['release_year'].value_counts().sort_index()
+    st.line_chart(all_releases)
+
 
     st.markdown("#### 📚 Top Genres (semicolon-separated fallback)")
     top_genres = df['genres'].str.split(';').explode().value_counts().head(10)
@@ -128,4 +205,4 @@ with st.expander("📊 Additional Dataset Overview"):
 
 # --- Footer ---
 st.markdown("---")
-st.markdown("<p style='text-align: center; font-size: 14px;'>Built with ❤️ using Streamlit</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; font-size: 14px;'></p>", unsafe_allow_html=True)
