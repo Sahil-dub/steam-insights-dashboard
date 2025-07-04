@@ -11,7 +11,7 @@ st.title("🎭 Genre Trends Dashboard")
 # Load dataset
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/steam_games.csv")
+    df = pd.read_csv("data/steam_games_cleaned.csv")
     df['genres_cleaned'] = df['genres'].apply(lambda x: re.sub(r"\s*\(.*?\)", "", x) if isinstance(x, str) else x)
     df['genre_list'] = df['genres_cleaned'].apply(lambda x: [g.strip() for g in x.split(',')] if isinstance(x, str) else [])
     return df
