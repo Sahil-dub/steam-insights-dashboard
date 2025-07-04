@@ -15,23 +15,19 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-        /* Background */
         .main {
             background-color: #f8f9fa;
         }
 
-        /* Header Title */
         h1 {
             color: #4CAF50;
             font-weight: 700;
         }
 
-        /* Sidebar */
         .css-1d391kg {
             background-color: #f1f3f6 !important;
         }
 
-        /* Charts and Containers */
         .element-container {
             border-radius: 12px;
             box-shadow: 0 0 10px rgba(0,0,0,0.05);
@@ -39,7 +35,6 @@ st.markdown(
             margin-bottom: 25px;
         }
 
-        /* Metric styling */
         div[data-testid="metric-container"] {
             background: white;
             padding: 10px;
@@ -49,12 +44,10 @@ st.markdown(
             margin: 5px;
         }
 
-        /* Input fields */
         input {
             border-radius: 8px !important;
         }
 
-        /* Sidebar title */
         section[data-testid="stSidebar"] h1 {
             color: #2C3E50;
         }
@@ -62,7 +55,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
 
 # --- Header ---
 st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🎮 Steam Insights Dashboard</h1>", unsafe_allow_html=True)
@@ -79,54 +71,41 @@ def load_data():
 
 df = load_data()
 
-# --- Sidebar Filters ---
+# --- Sidebar ---
 with st.sidebar:
+    st.title("🎮 GameScope")
     st.markdown("## 🔍 Search & Filters")
 
-    # Base search query
-    # Single dropdown for selecting game title
     game_options = sorted(df['name'].dropna().unique())
     selected_game = st.selectbox("🎮 Select Game Title:", options=["None"] + game_options, key="game_selector")
     selected_game = None if selected_game == "None" else selected_game
 
-
-
-
-    years = sorted(df['release_year'].dropna().unique().astype(int))
     genres = sorted(set(
         genre.strip()
         for sublist in df['genres'].dropna().astype(str).str.split(',')
         for genre in sublist
     ))
+    selected_genres = st.multiselect("🎭 Genres:", genres, key="genre_filter")
 
+    years = sorted(df['release_year'].dropna().unique().astype(int))
     default_years = years[-5:] if len(years) >= 5 else years
-    selected_years = st.multiselect("Release Years:", years, default=default_years, key="year_filter")
-    selected_genres = st.multiselect("Genres:", genres, key="genre_filter")
-
+    selected_years = st.multiselect("📅 Release Years:", years, default=default_years, key="year_filter")
 
 # --- Filter Data ---
 if selected_game:
-    # 🔹 Prioritize selected game — ignore other filters
     filtered_df = df[df['name'] == selected_game]
-
 elif selected_years:
-    # 🔹 Use year & genre filters if no specific game is selected
     filtered_df = df[df['release_year'].isin(selected_years)]
-
     if selected_genres:
         filtered_df = filtered_df[filtered_df['genres'].str.contains('|'.join(selected_genres), case=False, na=False)]
-
 else:
     filtered_df = pd.DataFrame()
 
-
-    # === Selected Game Summary & Radar ===
-# === Selected Game Summary & Radar ===
+# --- Selected Game Summary & Radar ---
 if selected_game:
     game_data = df[df['name'] == selected_game]
 
     if not game_data.empty:
-        # Use the first match only to avoid duplicates
         game = game_data.iloc[0]
 
         st.markdown("### 🧾 Selected Game Summary")
@@ -143,9 +122,8 @@ if selected_game:
         col3.metric("⭐ User Score", f"{game['user_score']:.1f}")
         col4.metric("🕹️ Avg Playtime", f"{int(game['average_playtime_forever'])} min")
 
-        # Radar chart
-        st.markdown("### 📊 Game Profile Radar")
         import plotly.graph_objects as go
+        st.markdown("### 📊 Game Profile Radar")
 
         try:
             max_vals = {
@@ -184,9 +162,6 @@ if selected_game:
         except Exception as e:
             st.warning(f"⚠️ Unable to render radar chart due to missing or invalid data: {e}")
 
-
-
-
 # --- KPI Section ---
 st.markdown("### 📊 Key Performance Indicators")
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
@@ -204,7 +179,7 @@ else:
 
 st.markdown("---")
 
-# --- Section: Game Releases Over Time ---
+# --- Game Releases Over Time ---
 st.markdown("### 🕒 Game Releases Over Time")
 
 if not filtered_df.empty:
@@ -221,7 +196,7 @@ if not filtered_df.empty:
 else:
     st.warning("⚠️ Please select at least one release year to view game release trends.")
 
-# --- Section: Genre Distribution ---
+# --- Genre Distribution ---
 st.markdown("### 🎭 Top Genres on Steam")
 
 if not filtered_df.empty and 'genres' in filtered_df.columns and filtered_df['genres'].notna().any():
@@ -251,7 +226,7 @@ if not filtered_df.empty and 'genres' in filtered_df.columns and filtered_df['ge
 else:
     st.info("Please select a valid year and genre to view genre distribution.")
 
-# --- Optional Section: Expandable Charts ---
+# --- Expandable Dataset Overview ---
 with st.expander("📊 Additional Dataset Overview"):
     st.markdown("#### 🔢 Total Games in Dataset")
     st.write(len(df))
@@ -259,7 +234,6 @@ with st.expander("📊 Additional Dataset Overview"):
     st.markdown("#### 📅 All Game Releases by Year (Full Dataset)")
     all_releases = df['release_year'].value_counts().sort_index()
     st.line_chart(all_releases)
-
 
     st.markdown("#### 📚 Top Genres (semicolon-separated fallback)")
     top_genres = df['genres'].str.split(';').explode().value_counts().head(10)
