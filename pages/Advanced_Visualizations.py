@@ -152,6 +152,95 @@ fig_heat = px.density_heatmap(
 fig_heat.update_layout(height=650, margin=dict(l=40, r=40, t=60, b=40))
 st.plotly_chart(fig_heat, use_container_width=True)
 
+##__comapre games__
+st.markdown("### 🎮 Compare Two Games Side-by-Side")
+
+# Load list of unique game titles
+game_names = sorted(full_df['name'].dropna().unique())
+
+col_left, col_right = st.columns(2)
+
+with col_left:
+    game1 = st.selectbox("🔍 Select First Game", game_names, key="game1")
+
+with col_right:
+    game2 = st.selectbox("🔎 Select Second Game", game_names, key="game2")
+
+# Only compare if both games are selected and not the same
+if game1 and game2 and game1 != game2:
+    game1_row = full_df[full_df['name'] == game1].iloc[0]
+    game2_row = full_df[full_df['name'] == game2].iloc[0]
+
+    st.markdown("### 🧾 Game Comparison Table")
+
+    compare_df = pd.DataFrame({
+        "🎮 Game": [game1_row["name"], game2_row["name"]],
+        "📅 Release Date": [game1_row["release_date"], game2_row["release_date"]],
+        "💵 Price (€)": [game1_row["price"], game2_row["price"]],
+        "🎭 Genres": [game1_row["genres"], game2_row["genres"]],
+        "🧑 Developer": [game1_row["developers"], game2_row["developers"]],
+        "🏢 Publisher": [game1_row["publishers"], game2_row["publishers"]],
+        "👍 Positive": [game1_row["positive"], game2_row["positive"]],
+        "👎 Negative": [game1_row["negative"], game2_row["negative"]],
+        "⭐ User Score": [game1_row["user_score"], game2_row["user_score"]],
+        "🕹️ Avg Playtime (min)": [game1_row["average_playtime_forever"], game2_row["average_playtime_forever"]],
+    })
+
+    st.dataframe(compare_df, use_container_width=True)
+
+    # Radar Comparison
+    st.markdown("### 📊 Radar Profile Comparison")
+
+    import plotly.graph_objects as go
+
+    max_vals = {
+        'positive': 100000,
+        'negative': 50000,
+        'user_score': 10,
+        'price': 60,
+        'average_playtime_forever': 5000
+    }
+
+    def normalize(row):
+        return [
+            min(row['positive'], max_vals['positive']) / max_vals['positive'] * 100,
+            min(row['negative'], max_vals['negative']) / max_vals['negative'] * 100,
+            row['user_score'] / max_vals['user_score'] * 100,
+            min(row['price'], max_vals['price']) / max_vals['price'] * 100,
+            min(row['average_playtime_forever'], max_vals['average_playtime_forever']) / max_vals['average_playtime_forever'] * 100,
+        ]
+
+    categories = ['👍 Positives', '👎 Negatives', '⭐ Score', '💵 Price', '🕹️ Playtime']
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatterpolar(
+        r=normalize(game1_row),
+        theta=categories,
+        fill='toself',
+        name=game1_row['name']
+    ))
+
+    fig.add_trace(go.Scatterpolar(
+        r=normalize(game2_row),
+        theta=categories,
+        fill='toself',
+        name=game2_row['name']
+    ))
+
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+        showlegend=True,
+        height=600,
+        title="🕹️ Side-by-Side Game Radar Comparison"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+elif game1 == game2 and game1 is not None:
+    st.info("⚠️ Please select two different games to compare.")
+
+
 
 ##recommendation engine__
 st.markdown("### 🎮 Game-Based Recommendation Engine (Find Similar Games by Genre & Reviews)")
