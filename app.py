@@ -84,16 +84,11 @@ with st.sidebar:
     st.markdown("## 🔍 Search & Filters")
 
     # Base search query
-    base_query = st.text_input("Type to Search Game Title:", placeholder="e.g. Portal")
+    # Single dropdown for selecting game title
+    game_options = sorted(df['name'].dropna().unique())
+    selected_game = st.selectbox("🎮 Select Game Title:", options=["None"] + game_options, key="game_selector")
+    selected_game = None if selected_game == "None" else selected_game
 
-    # Match game titles as user types
-    matched_titles = df[df['name'].str.contains(base_query, case=False, na=False)]['name'].unique()
-
-    # Simulate autocomplete by showing matching names in a selectbox
-    if base_query:
-        selected_game = st.selectbox("Select a Matching Title:", options=matched_titles, key="title_select")
-    else:
-        selected_game = None
 
 
 
@@ -110,19 +105,86 @@ with st.sidebar:
 
 
 # --- Filter Data ---
-if selected_years:
+if selected_game:
+    # 🔹 Prioritize selected game — ignore other filters
+    filtered_df = df[df['name'] == selected_game]
+
+elif selected_years:
+    # 🔹 Use year & genre filters if no specific game is selected
     filtered_df = df[df['release_year'].isin(selected_years)]
 
     if selected_genres:
         filtered_df = filtered_df[filtered_df['genres'].str.contains('|'.join(selected_genres), case=False, na=False)]
 
-    if selected_game:
-        filtered_df = filtered_df[filtered_df['name'] == selected_game]
-    elif base_query:
-        filtered_df = filtered_df[filtered_df['name'].str.contains(base_query, case=False, na=False)]    
-
 else:
     filtered_df = pd.DataFrame()
+
+
+    # === Selected Game Summary & Radar ===
+# === Selected Game Summary & Radar ===
+if selected_game:
+    game_data = df[df['name'] == selected_game]
+
+    if not game_data.empty:
+        # Use the first match only to avoid duplicates
+        game = game_data.iloc[0]
+
+        st.markdown("### 🧾 Selected Game Summary")
+        st.markdown(f"**🎮 Title:** {game['name']}")
+        st.markdown(f"**📅 Release Date:** {game['release_date'].date() if pd.notna(game['release_date']) else 'N/A'}")
+        st.markdown(f"**💵 Price (€):** {game['price']}")
+        st.markdown(f"**🎭 Genres:** {game['genres']}")
+        st.markdown(f"**🧑 Developer(s):** {game['developers']}")
+        st.markdown(f"**🏢 Publisher(s):** {game['publishers']}")
+
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("👍 Positive", int(game['positive']))
+        col2.metric("👎 Negative", int(game['negative']))
+        col3.metric("⭐ User Score", f"{game['user_score']:.1f}")
+        col4.metric("🕹️ Avg Playtime", f"{int(game['average_playtime_forever'])} min")
+
+        # Radar chart
+        st.markdown("### 📊 Game Profile Radar")
+        import plotly.graph_objects as go
+
+        try:
+            max_vals = {
+                'positive': 100000,
+                'negative': 50000,
+                'user_score': 10,
+                'price': 60,
+                'average_playtime_forever': 5000
+            }
+
+            values = [
+                min(game['positive'], max_vals['positive']) / max_vals['positive'] * 100,
+                min(game['negative'], max_vals['negative']) / max_vals['negative'] * 100,
+                game['user_score'] / max_vals['user_score'] * 100,
+                min(game['price'], max_vals['price']) / max_vals['price'] * 100,
+                min(game['average_playtime_forever'], max_vals['average_playtime_forever']) / max_vals['average_playtime_forever'] * 100
+            ]
+
+            categories = ['👍 Positives', '👎 Negatives', '⭐ Score', '💵 Price', '🕹️ Playtime']
+
+            fig_radar = go.Figure(data=go.Scatterpolar(
+                r=values,
+                theta=categories,
+                fill='toself',
+                name=game['name']
+            ))
+
+            fig_radar.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                showlegend=False,
+                title=f"📊 Radar Profile: {game['name']}"
+            )
+
+            st.plotly_chart(fig_radar, use_container_width=True)
+
+        except Exception as e:
+            st.warning(f"⚠️ Unable to render radar chart due to missing or invalid data: {e}")
+
+
 
 
 # --- KPI Section ---

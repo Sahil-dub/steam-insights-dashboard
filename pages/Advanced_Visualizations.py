@@ -3,6 +3,9 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 
+def clean_title(name):
+    return re.sub(r"[^\w\s]", "", name).strip()
+
 def clean_genre(raw):
     genre = str(raw).split(',')[0].strip() if pd.notna(raw) else None
     if genre:
@@ -116,8 +119,17 @@ df_genre = df_genre.rename(columns={'genre_list': 'clean_genre'})
 available_genres = sorted(df_genre['clean_genre'].dropna().unique())
 selected_genres = st.multiselect("🎯 Select Genres to Show on Heatmap:", options=available_genres, default=available_genres[:8])
 
+# --- Year selector ---
+available_years = sorted(df_genre['release_year'].dropna().unique().astype(int))
+selected_years = st.multiselect("📅 Select Release Years:", options=available_years, default=available_years[-8:])
+
+
 # Filter by selected genres
-filtered_heatmap_df = df_genre[df_genre['clean_genre'].isin(selected_genres)]
+filtered_heatmap_df = df_genre[
+    df_genre['clean_genre'].isin(selected_genres) &
+    df_genre['release_year'].isin(selected_years)
+]
+
 
 # --- Group and plot ---
 heatmap_df = filtered_heatmap_df.groupby(['release_year', 'clean_genre'])['user_score'].mean().reset_index()
@@ -139,4 +151,67 @@ fig_heat = px.density_heatmap(
 
 fig_heat.update_layout(height=650, margin=dict(l=40, r=40, t=60, b=40))
 st.plotly_chart(fig_heat, use_container_width=True)
+
+
+##recommendation engine__
+st.markdown("### 🎮 Game-Based Recommendation Engine (Find Similar Games by Genre & Reviews)")
+
+# --- Prepare data ---
+df_reco = full_df.dropna(subset=['name', 'genres', 'positive', 'negative', 'user_score']).copy()
+df_reco['clean_name'] = df_reco['name'].apply(clean_title)
+clean_to_original_name = dict(zip(df_reco['clean_name'], df_reco['name']))
+
+df_reco['genre_list'] = df_reco['genres'].apply(clean_and_split_genres)
+
+# --- Game selector ---
+game_names = sorted(df_reco['clean_name'].dropna().unique())
+selected_clean_name = st.selectbox("🎯 Select a Game to Get Recommendations:", options=game_names)
+selected_game = clean_to_original_name.get(selected_clean_name)
+
+# --- User controls number of recommendations ---
+num_recommendations = st.slider("📌 Number of Games to Recommend:", min_value=5, max_value=30, value=10, step=1)
+
+
+# --- Get genres of the selected game ---
+selected_game_genres = df_reco[df_reco['name'] == selected_game]['genre_list'].values
+if len(selected_game_genres) == 0:
+    st.warning("Genre data not available for this game.")
+    st.stop()
+
+# Handle multiple genres
+selected_genres = selected_game_genres[0] if isinstance(selected_game_genres[0], list) else [selected_game_genres[0]]
+
+# --- Find other games with overlapping genres ---
+df_reco = df_reco.explode('genre_list')
+similar_games = df_reco[df_reco['genre_list'].isin(selected_genres)]
+similar_games = similar_games[similar_games['name'] != selected_game]  # Exclude selected game
+
+# --- Compute positivity ratio ---
+similar_games['total_reviews'] = similar_games['positive'] + similar_games['negative']
+similar_games['positive_ratio'] = similar_games['positive'] / similar_games['total_reviews'].replace(0, 1)
+
+# --- Optional: composite score
+similar_games['score'] = similar_games['positive_ratio'] * similar_games['user_score']
+
+# --- Show top 10 similar games ---
+top_similar = similar_games.sort_values(by='total_reviews', ascending=False).head(num_recommendations)
+
+st.markdown(f"📌 Top 10 Games Similar to *{selected_game}*")
+st.dataframe(
+    top_similar[[
+        'name', 'release_date', 'price', 'positive', 'negative', 'total_reviews', 'positive_ratio', 'average_playtime_forever'
+    ]].rename(columns={
+        'name': '🎮 Game',
+        'release_date': '📅 Release Date',
+        'price': '💵 Price (€)',
+        'positive': '👍 Positive',
+        'negative': '👎 Negative',
+        'total_reviews': '🧾 Total Reviews',
+        'positive_ratio': '✨ Positivity %',
+        'average_playtime_forever': '🕹️ Avg Playtime (min)'
+    }),
+    use_container_width=True
+)
+
+
 
