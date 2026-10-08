@@ -1,41 +1,53 @@
 import streamlit as st
 
+st.set_page_config(page_title="About | Steam Insights Dashboard", layout="wide")
+
 st.title("📘 About Steam Insights Dashboard")
 
 st.markdown("""
-Welcome to the **Steam Insights Dashboard**! 🎮
+## Project overview
 
-This interactive dashboard lets you explore a rich dataset of Steam games, offering insights into:
-- 🕹 Game releases over time
-- 🎯 User ratings and playtime trends
-- 💰 Pricing dynamics and distribution
-- 🧩 Genre-based performance and popularity
+**Steam Insights Dashboard** is an interactive analytics application for exploring a cleaned dataset of **27,000+ Steam games**.
 
-### 🔍 Key Features
-- Multi-page layout with smooth navigation
-- Interactive filters and dynamic charts
-- Advanced visualizations like time-series, genre trees, and scatter plots
+The project focuses on practical exploratory analytics and dashboard development rather than a static notebook. Users can investigate release trends, genres, pricing, ratings, playtime and individual game comparisons.
 
-### 📊 Dataset Info
-- Contains over **27,000+ games** from the Steam platform
-- Includes fields like:
-  - Title, Release Date, Price
-  - User Score, Average Playtime
-  - Supported Platforms, Genres, etc.
+## Analytical areas
 
-### 👨‍💻 Built With
-- `Python`, `Pandas`, `Matplotlib`, `Seaborn`
-- `Plotly`, `Streamlit`, `Altair`
+- 🕹️ Game releases and catalogue trends
+- 🎭 Genre distribution and genre-level performance
+- ⭐ User scores and review signals
+- 💰 Pricing and value-for-money analysis
+- 🕒 Average playtime
+- 🎮 Side-by-side game comparison
+- 🧠 Heuristic game recommendations
 
-### 📂 Project Structure
-- `data/` – raw and cleaned datasets
-- `notebooks/` – exploratory analysis
-- `pages/` – multi-page Streamlit app
-- `app.py` – main launcher
+## Technology
 
-### 🚀 Future Enhancements
-- Add filtering by tags
-- Sentiment analysis from reviews
-- Recommender system based on user play behavior
+- **Python**
+- **Pandas / NumPy**
+- **Plotly**
+- **Matplotlib / Seaborn**
+- **Streamlit**
+- **Jupyter Notebook**
 
+## Repository structure
+
+- `data/` — cleaned dataset used by the dashboard
+- `notebooks/` — exploratory analysis
+- `pages/` — Streamlit analytical pages
+- `1steam.py` — main Streamlit entry point
+- `requirements.txt` — Python dependencies
+
+## Important note
+
+The recommendation feature currently uses a **genre + review based heuristic**, not a trained machine-learning model. This keeps the current implementation transparent while leaving room for a future recommendation model.
+
+## Future improvements
+
+- Automated data-quality validation
+- Reusable data-processing modules
+- Automated tests
+- Reproducible data ingestion
+- Deployment with a live demo
+- More rigorous recommendation/similarity modelling
 """)
