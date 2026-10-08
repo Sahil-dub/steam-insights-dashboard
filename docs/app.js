@@ -1,4 +1,4 @@
-const DATA_URL="data/steam_games_cleaned.csv";
+const DATA_URL="../data/steam_games_cleaned.csv";
 const $=id=>document.getElementById(id);
 function parseCSV(text){const rows=[];let row=[],cell="",quoted=false;for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];if(c==='\"'){if(quoted&&n==='\"'){cell+='\"';i++;}else quoted=!quoted;}else if(c===','&&!quoted){row.push(cell);cell="";}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&n==='\n')i++;row.push(cell);if(row.some(v=>v!==""))rows.push(row);row=[];cell="";}else cell+=c;}if(cell||row.length){row.push(cell);rows.push(row);}const h=rows.shift().map(x=>x.trim());return rows.map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]??""])));}
 const num=v=>{const x=Number(v);return Number.isFinite(x)?x:null};
