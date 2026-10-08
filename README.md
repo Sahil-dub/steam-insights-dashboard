@@ -4,6 +4,9 @@ Interactive Steam game analytics built with **Python, Pandas, Plotly and Streaml
 
 > **Portfolio focus:** exploratory data analysis, data cleaning, interactive BI-style dashboards, KPI reporting and analytical storytelling.
 
+
+> **Live recruiter demo:** [GitHub Pages dashboard](https://sahil-dub.github.io/steam-insights-dashboard/) — a static showcase that reads the repository dataset directly and reproduces core analytical views in the browser.
+
 ## 📌 What this project answers
 
 The dashboard is designed to explore questions such as:
